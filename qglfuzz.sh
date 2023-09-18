@@ -1,7 +1,6 @@
 #!/bin/bash
 
-
-# REQUIREMENTS: You MUST add " #point1" through 4 behind your original numbers in your printer.cfg, example below:
+# REQUIREMENTS: You MUST add " #point1" through 4 behind your original numbers in your printer.cfg one time, example below:
 # [quad_gantry_level]
 # points:
 #   50,25 #point1
