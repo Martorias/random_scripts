@@ -13,7 +13,7 @@
 # In this example the coordinates for the first point will change between 45,20 to 55,30
 botleft="45,20"
 topleft="45,245"
-topright="245,20"
+topright="245,245"
 botright="245,20"
 fuzz=10
 printercfg="/home/pi/printer_data/config/printer.cfg"
