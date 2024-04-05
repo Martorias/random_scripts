@@ -31,11 +31,13 @@ def find_nozzle_temperature_and_filament_colors(file_path):
 
 def process_gcode(file_path, nozzle_temperatures, filament_colors, z_offset_value):
     modified_lines = []
-    z_move_regex = re.compile(r"(G[01]\s.*Z)([-\+]?\d*\.?\d*)(.*)")    
+    z_move_regex = re.compile(r"(G[01]\s.*Z)([-\+]?\d*\.?\d*)(.*)")  
+    t_pattern = re.compile(r'^T\d$')    
     with open(file_path, 'r') as file:
         lines = file.readlines()
         for i in range(len(lines) - 1):
-            if lines[i].startswith("T") and "; Filament gcode" in lines[i+1]:
+            match = re.match(t_pattern, lines[i])
+            if match:        
                 t_number = lines[i].strip()[1:]
                 s_value = nozzle_temperatures[int(t_number)]
                 rgb_value = filament_colors[int(t_number)]
