@@ -20,3 +20,18 @@ Printer start gcode shouldn't have to be anything special I think, as long as it
 I use 
 print_start TOOL_TEMP={first_layer_temperature[initial_tool]} TOOL=[initial_tool] BED=[first_layer_bed_temperature] CHAMBER=[chamber_temperature]
 
+More printer settings:
+![bild](https://github.com/Martorias/random_scripts/assets/38153913/70645f69-2caa-42f9-96f0-5c0be6a019d8)
+
+![bild](https://github.com/Martorias/random_scripts/assets/38153913/f51578fa-d8f8-469f-bb90-52698e80df22)
+(you might have to tweak this)
+
+For the filaments you want to disable flushing as it's not needed (set to 0) unless you want a large prime tower
+Might be a better way of doing this, not sure yet.
+![bild](https://github.com/Martorias/random_scripts/assets/38153913/b149bfc5-1153-4c96-b6f7-16fd44600493)
+
+Prime tower settings example
+![bild](https://github.com/Martorias/random_scripts/assets/38153913/ab17be1b-9e0a-4d16-a062-012115e9337b)
+
+
+
