@@ -3,6 +3,9 @@ Use at your own risk
 
 This script should make your orca sliced gcode files compatible with toolchangers
 
+## Requirements:
+Python!
+
 ## Features:
 - Calls M104 to set temps before initiating toolchange
 - Shuts down the heater after a toolhead isn't called again
@@ -10,16 +13,22 @@ This script should make your orca sliced gcode files compatible with toolchanger
 - (optional) Sets the LEDs upon toolchange to match filament color defined in orca (and set nozzles to white).  
 You might want to tweak this if you use it, currently good for Dragonburner with sequins (3 rgb leds)
 
-If you want to disable the optional stuff just changed to "False" in the script.
+If you want to disable the optional stuff just change it to "**False**" in the script.
 
 ## How to use:
-In your printing settings, add the post-processing script (I had to point at python.exe then script)
-
+In your printing settings, add the post-processing script like below  
+Should be <path_to_python.exe> <path_to_script.py> (or the linux equiv)  
 ![bild](https://github.com/Martorias/random_scripts/assets/38153913/cde88ad3-8c67-4a26-84f6-4a2c8077cc71)
 
-Printer start gcode shouldn't have to be anything special I think, as long as it matches your klipper macro.  
-I use   
-PRINT_START TOOL_TEMP={first_layer_temperature[initial_tool]} TOOL=[initial_tool] BED=[first_layer_bed_temperature] CHAMBER=[chamber_temperature]
+Example of printer **START GCODE**
+> PRINT_START TOOL_TEMP={first_layer_temperature[initial_tool]} TOOL=[initial_tool] BED=[first_layer_bed_temperature] CHAMBER=[chamber_temperature]
+
+Printer **END GCODE**  doesn't have to be anything specific- **HOWEVER**  
+If you use T# (eg. T0) in it to reset to your default toolhead, it has to be adjusted to "T0 ; something"  
+Otherwise the script will (currently) think it's time to change toolhead and pre-heat it again -_-  
+Anything as long as it's not only T followed by a number.  
+![bild](https://github.com/Martorias/random_scripts/assets/38153913/5114c04d-8682-4184-986e-a82922a5f6d4)
+
 
 More printer settings:  
 ![bild](https://github.com/Martorias/random_scripts/assets/38153913/70645f69-2caa-42f9-96f0-5c0be6a019d8)
@@ -35,5 +44,21 @@ There's probably a better way of doing this, not sure yet.
 Prime tower settings example  
 ![bild](https://github.com/Martorias/random_scripts/assets/38153913/ab17be1b-9e0a-4d16-a062-012115e9337b)
 
+## How it actually works
+Assuming we have both z_offset_adjust and led_effects as True, the script does (in this order)
+- Searches through the file to find regex '^T\d$' (T followed by one digit) and adds them to a dictionary.  
+  It then goes through this dictionary and find the position for the last unique hit.  
+  Then it adds "M104 S0 ; Turning off heater as it's not used anymore" before the next hit.  
+  Saves the changes.
+- Next it searches through the end of the file to find nozzle temps, filament color and type. Specifically:  
+  "; nozzle_temperature =" and splits the different tool temperatures into a list.  
+  "; filament_colour =" and converts the hex colors to RGB and splits them into another list.  
+  "; filament_type =" to see what filament type is used.  
+- Depending on the filament it'll now create a **z_offset_value** (can be changed at the end of the script)  
+- Finally it goes through the file and searches for '^T\d$' and '(G[01]\s.*Z)([-\+]?\d*\.?\d*)(.*)' to find tool changes and G-codes moving on Z axis  
+  It adds "M104 T# S#" just before the toolchange to start heating the new hotend up to the requested filament type.  
+  If **led_effects** is true it'll add "SET_LED" commands as well. They're designed for 3 rgb-led DragonBurner but can be changed to fit whatever.  
+  If **z_offset_adjust** is true it'll add (or subtract) the **z_offset_value** to all z-moves in the gcode.
+  
 
 
