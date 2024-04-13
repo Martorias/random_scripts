@@ -2,7 +2,7 @@ import re
 import sys
 
 # Settings:
-cooldown_rows = 10000       # How many rows between same toolhead being used to call for cooldown
+cooldown_rows = 10000       # How many rows between same the previous tool being used again at a toolchange
 cooldown_temp = 150         # Temperature to cool down to
 preheat_rows = 2000         # How many rows before toolchange to start pre-heating
 led_effects = True          # Use led effects (currently for 3x RGB, dragonburner)
@@ -63,22 +63,12 @@ def find_in_file(start_line, regex):
                     return current_line
     return 0
 
-def insert_temps_and_leds(file_path):
+def insert_temps(file_path):
     with open(file_path, "r") as f:
         contents = f.readlines()
     
     # Loop through tool numbers
     modified_lines = {}
-    
-    first_tool_row = find_in_file(0,'^T\d$') # search from the start
-    first_tool = ((contents[first_tool_row-1]).strip())[1]
-    
-    if led_effects: # Turn on leds first tool
-        rgb_value = filament_colors[int(first_tool)]
-        modified_lines[first_tool_row-1] = []
-        modified_lines[first_tool_row-1].append(f"SET_LED LED=T{first_tool}_RGB RED=1 GREEN=1 BLUE=1 INDEX=1 TRANSMIT=1 ; m\n")
-        modified_lines[first_tool_row-1].append(f"SET_LED LED=T{first_tool}_RGB RED=1 GREEN=1 BLUE=1 INDEX=2 TRANSMIT=1 ; m\n")  
-        modified_lines[first_tool_row-1].append(f"SET_LED LED=T{first_tool}_RGB {rgb_value} INDEX=3 TRANSMIT=1 ; m\n") 
     
     for toolnr, line_numbers in toolchanges.items():
         # Iterate through line numbers
@@ -90,17 +80,14 @@ def insert_temps_and_leds(file_path):
                 if next_tool_found == 0 and next_tool_row > 0: # Checking if there'll be another toolchange
                     modified_lines[next_tool_row-1] = []
                     modified_lines[next_tool_row-1].append(f"M104 T{toolnr} S0 ; Turning off tool as it's not used again\n") 
-                    if led_effects: # Turn off leds for unused heaters
-                        modified_lines[next_tool_row-1].append(f"SET_LED LED=T{toolnr}_RGB RED=0 GREEN=0 BLUE=0 INDEX=1 TRANSMIT=1 ; m\n")
-                        modified_lines[next_tool_row-1].append(f"SET_LED LED=T{toolnr}_RGB RED=0 GREEN=0 BLUE=0 INDEX=2 TRANSMIT=1 ; m\n")  
-                        modified_lines[next_tool_row-1].append(f"SET_LED LED=T{toolnr}_RGB RED=0 GREEN=0 BLUE=0 INDEX=3 TRANSMIT=1 ; m\n")                               
+                            
                     next_tool_found = 1
             else:
                 next_tool_row = find_in_file(lineno,'^T\d$')
                 if next_tool_row > 0:
                     if line_numbers[i+1] - next_tool_row > cooldown_rows: # If next hit of current tool is > cooldown_rows from next toolchange
                         modified_lines[next_tool_row-1] = []
-                        modified_lines[next_tool_row-1].append(f"M104 T{toolnr} S{cooldown_temp} ; m Cooling down while tool is in long-time parking\n")                
+                        modified_lines[next_tool_row-1].append(f"M104 T{toolnr} S{cooldown_temp} ; Cooling down while tool is in long-time parking\n")                
 
             # Pre-heat - Set temps ahead of toolhead usage
             print_start = find_in_file(0, '(?i)print_start')
@@ -112,11 +99,6 @@ def insert_temps_and_leds(file_path):
             modified_lines[preheat_row] = []
             s_value = nozzle_temperatures[int(toolnr)]
             modified_lines[preheat_row].append(f"M104 T{toolnr} S{s_value} ; Pre-heating tool before use\n")
-            if led_effects: # Sets T?_RGB Led 3 to filament color, and led 1+2 to white
-                rgb_value = filament_colors[int(toolnr)]
-                modified_lines[preheat_row].append(f"SET_LED LED=T{toolnr}_RGB RED=1 GREEN=1 BLUE=1 INDEX=1 TRANSMIT=1 ; m\n")
-                modified_lines[preheat_row].append(f"SET_LED LED=T{toolnr}_RGB RED=1 GREEN=1 BLUE=1 INDEX=2 TRANSMIT=1 ; m\n")  
-                modified_lines[preheat_row].append(f"SET_LED LED=T{toolnr}_RGB {rgb_value} INDEX=3 TRANSMIT=1 ; m\n")
     
     myKeys = list(modified_lines.keys())
     myKeys.sort()
@@ -142,7 +124,7 @@ def process_gcode_offset(file_path, z_offset_value):
                 result = z_move_regex.fullmatch(lines[i].strip())
                 if result:
                     adjusted_z = round(float(result.group(2)) + z_offset_value, 5)
-                    lines[i] = result.group(1) + str(adjusted_z) + result.group(3) + " ; m adjusted by z offset\n"
+                    lines[i] = result.group(1) + str(adjusted_z) + result.group(3) + " ; adjusted by z offset\n"
             modified_lines.append(lines[i])
             
     with open(file_path, 'w') as file:
@@ -161,10 +143,20 @@ def fix_print_start(file_path):
     sorted_tools = sorted(toolchanges.keys())
     start_line_index = find_in_file(0, '(?i)print_start')
     start_line = lines[start_line_index-1].strip()
+    led_line = ""
     for t in sorted_tools:
         s_value = nozzle_temperatures[int(t)]
-        start_line = start_line + " T" + "".join(t) + "_TEMP=" + str(s_value)
-    lines[start_line_index-1] = start_line + '\n'
+        toolnr = "".join(t)
+        start_line = start_line + " T" + str(toolnr) + "_TEMP=" + str(s_value)
+        if led_effects: # Sets T?_RGB Led 3 to filament color, and led 1+2 to white
+            rgb_value = filament_colors[int(toolnr)]
+            led_line = led_line + (f"SET_LED LED=T{toolnr}_RGB RED=1 GREEN=1 BLUE=1 INDEX=1 TRANSMIT=1\n")
+            led_line = led_line + (f"SET_LED LED=T{toolnr}_RGB RED=1 GREEN=1 BLUE=1 INDEX=2 TRANSMIT=1\n")  
+            led_line = led_line + (f"SET_LED LED=T{toolnr}_RGB {rgb_value} INDEX=3 TRANSMIT=1\n")
+    print(f"Initial leds:\n{led_line}")            
+    print(f"New print_start:\n{start_line}" + "\n")    
+    lines[start_line_index-1] = led_line + start_line + '\n'
+
             
     with open(file_path, 'w') as f:
         f.writelines(lines)        
@@ -179,8 +171,9 @@ if __name__ == "__main__":
     toolchanges = find_tool_changes(file_path)
     nozzle_temperatures, filament_colors, filament_type = find_parameters(file_path)    
     fix_print_start(file_path)
-    remove_m104_lines(file_path)    
-    insert_temps_and_leds(file_path)
+    if not find_in_file(0, '(?i).*temperature_tower') >0:
+        remove_m104_lines(file_path)    
+        insert_temps(file_path)
 
     if z_offset_adjust:
         if "ASA" in filament_type or "ABS" in filament_type:
@@ -194,5 +187,3 @@ if __name__ == "__main__":
         
         if not z_offset_value == 0:
             process_gcode_offset(file_path, z_offset_value)
-
-
