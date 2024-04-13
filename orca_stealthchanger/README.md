@@ -10,10 +10,10 @@ Python!
 - Calls M104 to set temps before initiating toolchange
 - Shuts down the heater after a toolhead isn't called again
 - (optional) Adjust z-offset in code, might be good if you want to tweak all gcode z height independent of your tools
-- (optional) Sets the LEDs upon toolchange to match filament color defined in orca (and set nozzles to white).  
+- (optional) Sets the LEDs to match filament color defined in orca (and set nozzles to white).  
 You might want to tweak this if you use it, currently good for Dragonburner with sequins (3 rgb leds)
 
-If you want to disable the optional stuff just change it to "**False**" in the script.
+If you want to enable the optional stuff just change it to **True** in the script.
 
 ## How to use:
 In your printing settings, add the post-processing script like below  
