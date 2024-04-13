@@ -35,30 +35,32 @@ More printer settings:
 
 ![bild](https://github.com/Martorias/random_scripts/assets/38153913/f51578fa-d8f8-469f-bb90-52698e80df22)
 
-(you might have to tweak this)
+(you might have to tweak this, I'm currently using 15 retract and -5 on restart to avoid blobs at beginning of prime)
 
-For the filaments you want to disable flushing as it's not needed (set to 0) unless you want a large prime tower  
+For the filaments you want to disable flushing as it's not needed (set multiplier to 0 is the easiest ) unless you want a large prime tower  
 There's probably a better way of doing this, not sure yet.  
-![bild](https://github.com/Martorias/random_scripts/assets/38153913/b149bfc5-1153-4c96-b6f7-16fd44600493)
+![bild](https://github.com/Martorias/random_scripts/assets/38153913/b665695f-0697-45c4-a43e-61974bdd4175)
+
+Adding some minimal purge per filament might be a good option as well, I use 15mm3  
+![bild](https://github.com/Martorias/random_scripts/assets/38153913/d4df1dc3-1b4d-49cd-8529-3395204f9f41)
+
 
 Prime tower settings example  
 ![bild](https://github.com/Martorias/random_scripts/assets/38153913/ab17be1b-9e0a-4d16-a062-012115e9337b)
 
-## How it actually works
+## How it roughly works
 Assuming we have both z_offset_adjust and led_effects as True, the script does (in this order)
 - Searches through the file to find regex '^T\d$' (T followed by one digit) and adds them to a dictionary.  
-  It then goes through this dictionary and find the position for the last unique hit.  
-  Then it adds "M104 S0 ; Turning off heater as it's not used anymore" before the next hit.  
-  Saves the changes.
-- Next it searches through the end of the file to find nozzle temps, filament color and type. Specifically:  
+- Searches through the end of the file to find nozzle temps, filament color and type. Specifically:  
   "; nozzle_temperature =" and splits the different tool temperatures into a list.  
   "; filament_colour =" and converts the hex colors to RGB and splits them into another list.  
-  "; filament_type =" to see what filament type is used.  
-- Depending on the filament it'll now create a **z_offset_value** (can be changed at the end of the script)  
-- Finally it goes through the file and searches for '^T\d$' and '(G[01]\s.*Z)([-\+]?\d*\.?\d*)(.*)' to find tool changes and G-codes moving on Z axis  
-  It adds "M104 T# S#" just before the toolchange to start heating the new hotend up to the requested filament type.  
-  If **led_effects** is true it'll add "SET_LED" commands as well. They're designed for 3 rgb-led DragonBurner but can be changed to fit whatever.  
-  If **z_offset_adjust** is true it'll add (or subtract) the **z_offset_value** to all z-moves in the gcode.
+  "; filament_type =" to see what filament type is used.
+- Finds the "print_start" to add SET_LEDs just before (if enabled) (colors are based on filament_color)
+  It then adds "T" + toolnr + "_TEMP=" + temp per each used tool, (adding T0_TEMP=230 T1_TEMP=210 etc, I'm using it for a purge macro)
+- Remove all M104 lines (as they will mess up my pre-heating) **This is skipped if temperature_tower is found in the file lol**
+- If enabled, depending on the filament it'll now create a **z_offset_value** (can be changed at the end of the script)  
+  Finally it goes through the file and searches for '(G[01]\s.*Z)([-\+]?\d*\.?\d*)(.*)' to find G-codes moving on Z axis  
+  It'll add (or subtract) the **z_offset_value** to all z-moves in the gcode.
   
 
 
