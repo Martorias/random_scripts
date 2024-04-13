@@ -5,8 +5,8 @@ import sys
 cooldown_rows = 10000       # How many rows between same the previous tool being used again at a toolchange
 cooldown_temp = 150         # Temperature to cool down to
 preheat_rows = 2000         # How many rows before toolchange to start pre-heating
-led_effects = True          # Use led effects (currently for 3x RGB, dragonburner)
-z_offset_adjust = True      # If gcode should be z-adjusted, check the end to change templates
+led_effects = False         # Use led effects (currently for 3x RGB, dragonburner)
+z_offset_adjust = False     # If gcode should be z-adjusted, check the end to change templates
 
 
 # Function to find tool changes in a G-code file
