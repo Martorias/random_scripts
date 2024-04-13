@@ -55,9 +55,10 @@ Assuming we have both z_offset_adjust and led_effects as True, the script does (
   "; nozzle_temperature =" and splits the different tool temperatures into a list.  
   "; filament_colour =" and converts the hex colors to RGB and splits them into another list.  
   "; filament_type =" to see what filament type is used.
-- Finds the "print_start" to add SET_LEDs just before (if enabled) (colors are based on filament_color)
-  It then adds "T" + toolnr + "_TEMP=" + temp per each used tool, (adding T0_TEMP=230 T1_TEMP=210 etc, I'm using it for a purge macro)
-- Remove all M104 lines (as they will mess up my pre-heating) **This is skipped if temperature_tower is found in the file lol**
+- Remove all M104 lines (as the default orca pre-heats will heat up the wrong tool)  
+  Inserts M104 Tx S<nozzle_temperature> a set number of rows before it'll be used (based on preheat_rows and temps found)  
+  Inserts M104 Tx S<cooldown_temp> (based on cooldown_rows and cooldown_temp)  
+  **This is skipped if temperature_tower is found in the file lol**
 - If enabled, depending on the filament it'll now create a **z_offset_value** (can be changed at the end of the script)  
   Finally it goes through the file and searches for '(G[01]\s.*Z)([-\+]?\d*\.?\d*)(.*)' to find G-codes moving on Z axis  
   It'll add (or subtract) the **z_offset_value** to all z-moves in the gcode.
