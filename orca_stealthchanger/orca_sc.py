@@ -169,11 +169,11 @@ if __name__ == "__main__":
     file_path = sys.argv[1]
 
     toolchanges = find_tool_changes(file_path)
-    nozzle_temperatures, filament_colors, filament_type = find_parameters(file_path)    
-    fix_print_start(file_path)
+    nozzle_temperatures, filament_colors, filament_type = find_parameters(file_path)
     if not find_in_file(0, '(?i).*temperature_tower') >0:
         remove_m104_lines(file_path)    
         insert_temps(file_path)
+    fix_print_start(file_path)
 
     if z_offset_adjust:
         if "ASA" in filament_type or "ABS" in filament_type:
