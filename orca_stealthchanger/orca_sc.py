@@ -4,9 +4,10 @@ import sys
 # Settings:
 cooldown_rows = 10000       # How many rows between same the previous tool being used again at a toolchange
 cooldown_temp = 150         # Temperature to cool down to
+early_tool_rows = 5000      # 
 preheat_rows = 2000         # How many rows before toolchange to start pre-heating
-led_effects = False         # Use led effects (currently for 3x RGB, dragonburner)
-z_offset_adjust = False     # If gcode should be z-adjusted, check the end to change templates
+led_effects = True          # Use led effects (currently for 3x RGB, dragonburner)
+z_offset_adjust = True      # If gcode should be z-adjusted, check the end to change templates
 
 
 # Function to find tool changes in a G-code file
@@ -169,17 +170,17 @@ if __name__ == "__main__":
     file_path = sys.argv[1]
 
     toolchanges = find_tool_changes(file_path)
-    nozzle_temperatures, filament_colors, filament_type = find_parameters(file_path)
+    nozzle_temperatures, filament_colors, filament_type = find_parameters(file_path)    
     if not find_in_file(0, '(?i).*temperature_tower') >0:
         remove_m104_lines(file_path)    
         insert_temps(file_path)
     fix_print_start(file_path)
-
+    
     if z_offset_adjust:
         if "ASA" in filament_type or "ABS" in filament_type:
             z_offset_value = 0.01
         elif "PLA" in filament_type:
-            z_offset_value = 0
+            z_offset_value = -0.02
         elif "TPU" in filament_type or "PET" in filament_type or "PETG" in filament_type:
             z_offset_value = 0.12
         else:
