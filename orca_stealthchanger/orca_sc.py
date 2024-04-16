@@ -2,28 +2,21 @@ import re
 import sys
 
 # Settings:
-cooldown_rows = 10000       # How many rows between same the previous tool being used again at a toolchange
+cooldown_rows = 6000        # How many rows between same the previous tool being used again at a toolchange
 cooldown_temp = 150         # Temperature to cool down to
-early_tool_rows = 5000      # 
-preheat_rows = 2000         # How many rows before toolchange to start pre-heating
+early_tool_rows = 4000      # Tools changed found the first n lines added to PRINT_START 
+preheat_rows = 2000         # How many rows before a toolchange to start pre-heating
 led_effects = True          # Use led effects (currently for 3x RGB, dragonburner)
 z_offset_adjust = True      # If gcode should be z-adjusted, check the end to change templates
 
 
-# Function to find tool changes in a G-code file
 def find_tool_changes(file_path):
     toolchanges = {}
-
-    # Open the file in read mode
     with open(file_path, 'r') as f:
-        # Iterate over each line in the file
         for lineno, line in enumerate(f, start=1):
-            # Use regular expression to find tool changes
             match = re.match(r'^T(\d)$', line.strip())
             if match:
-                # Extract tool number from the match
                 toolnr = match.group(1)
-                # Store line number with tool number as key
                 if toolnr not in toolchanges:
                     toolchanges[toolnr] = []
                 toolchanges[toolnr].append(lineno)
@@ -67,12 +60,9 @@ def find_in_file(start_line, regex):
 def insert_temps(file_path):
     with open(file_path, "r") as f:
         contents = f.readlines()
-    
-    # Loop through tool numbers
+
     modified_lines = {}
-    
     for toolnr, line_numbers in toolchanges.items():
-        # Iterate through line numbers
         for i, lineno in enumerate(line_numbers):
             # Cooldown - Check if the heater won't be used in along time or not at all
             if lineno==line_numbers[-1]: # Last hit, won't be used again?
@@ -96,11 +86,11 @@ def insert_temps(file_path):
                 preheat_row = print_start
             else:
                 preheat_row = lineno - preheat_rows
-                #print(f"current line: {lineno}, start preheat at: {preheat_row}")
             modified_lines[preheat_row] = []
             s_value = nozzle_temperatures[int(toolnr)]
             modified_lines[preheat_row].append(f"M104 T{toolnr} S{s_value} ; Pre-heating tool before use\n")
     
+    # Sort the lines and insert in order
     myKeys = list(modified_lines.keys())
     myKeys.sort()
     sorted_dict = {i: modified_lines[i] for i in myKeys}
@@ -134,6 +124,7 @@ def process_gcode_offset(file_path, z_offset_value):
 def remove_m104_lines(file_path):
     with open(file_path, 'r') as f:
         lines = f.readlines()
+    # Removing lines starting with "M104 S"
     filtered_lines = [line for line in lines if not line.startswith("M104 S")]
     with open(file_path, 'w') as f:
         f.writelines(filtered_lines)
@@ -144,18 +135,31 @@ def fix_print_start(file_path):
     sorted_tools = sorted(toolchanges.keys())
     start_line_index = find_in_file(0, '(?i)print_start')
     start_line = lines[start_line_index-1].strip()
+    
     led_line = ""
     for t in sorted_tools:
         s_value = nozzle_temperatures[int(t)]
         toolnr = "".join(t)
+        # Adds Tx_TEMP=123 to PRINT_START for each tool, for purging macros etc
         start_line = start_line + " T" + str(toolnr) + "_TEMP=" + str(s_value)
-        if led_effects: # Sets T?_RGB Led 3 to filament color, and led 1+2 to white
+        if led_effects: # Sets Tx_RGB Led index 3 to filament color, and led 1+2 to white
             rgb_value = filament_colors[int(toolnr)]
             led_line = led_line + (f"SET_LED LED=T{toolnr}_RGB RED=1 GREEN=1 BLUE=1 INDEX=1 TRANSMIT=1\n")
             led_line = led_line + (f"SET_LED LED=T{toolnr}_RGB RED=1 GREEN=1 BLUE=1 INDEX=2 TRANSMIT=1\n")  
             led_line = led_line + (f"SET_LED LED=T{toolnr}_RGB {rgb_value} INDEX=3 TRANSMIT=1\n")
-    print(f"Initial leds:\n{led_line}")            
-    print(f"New print_start:\n{start_line}" + "\n")    
+    print(f"Initial leds:\n{led_line}")
+    
+    # Adds EARLY_TOOLS=0,2,5 etc to PRINT_START for pre-heating macros
+    early_tools = ""
+    for toolnr, line_numbers in toolchanges.items():
+      for lineno in line_numbers:
+        if lineno < early_tool_rows:
+          early_tools = early_tools + toolnr + ","
+          break
+    if early_tools != "":
+      start_line = start_line + " EARLY_TOOLS=" + early_tools[:-1]
+    
+    print(f"New print_start:\n{start_line}" + "\n")
     lines[start_line_index-1] = led_line + start_line + '\n'
 
             
@@ -166,7 +170,7 @@ if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: script.py file.gcode")
         sys.exit(1)
-        
+
     file_path = sys.argv[1]
 
     toolchanges = find_tool_changes(file_path)
