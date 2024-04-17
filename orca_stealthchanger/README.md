@@ -62,6 +62,9 @@ Assuming we have both z_offset_adjust and led_effects as True, the script does (
 - If enabled, depending on the filament it'll now create a **z_offset_value** (can be changed at the end of the script)  
   Finally it goes through the file and searches for '(G[01]\s.*Z)([-\+]?\d*\.?\d*)(.*)' to find G-codes moving on Z axis  
   It'll add (or subtract) the **z_offset_value** to all z-moves in the gcode.
-  
+- Modifies the PRINT_START line by adding Tx_TEMP=123 for each used toolhead (based on temperatures fetched earlier)  
+  Also adds "EARLYTOOLS=x,x,x" as a parameter, listing tools that's used based on early_tool_rows.  
+  In my purge macro I don't lower/disable the temps for tools that is used early in the print.  
+  Finally it also adds SET_LED lines if enabled to set LOGO color based on filament_color.
 
 
