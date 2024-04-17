@@ -2,12 +2,12 @@ import re
 import sys
 
 # Settings:
-cooldown_rows = 6000        # How many rows between same the previous tool being used again at a toolchange
+cooldown_rows = 5000        # How many rows between same the previous tool being used again at a toolchange
 cooldown_temp = 150         # Temperature to cool down to
-early_tool_rows = 4000      # Tools changed found the first n lines added to PRINT_START 
-preheat_rows = 2000         # How many rows before a toolchange to start pre-heating
+early_tool_rows = 3000      # Tools changed found the first n lines added to PRINT_START 
+preheat_rows = 1500         # How many rows before a toolchange to start pre-heating
 led_effects = True          # Use led effects (currently for 3x RGB, dragonburner)
-z_offset_adjust = True      # If gcode should be z-adjusted, check the end to change templates
+z_offset_adjust = False      # If gcode should be z-adjusted, check the end to change templates
 
 
 def find_tool_changes(file_path):
@@ -149,20 +149,19 @@ def fix_print_start(file_path):
             led_line = led_line + (f"SET_LED LED=T{toolnr}_RGB {rgb_value} INDEX=3 TRANSMIT=1\n")
     print(f"Initial leds:\n{led_line}")
     
-    # Adds EARLY_TOOLS=0,2,5 etc to PRINT_START for pre-heating macros
-    early_tools = ""
+    # Adds EARLYTOOLS=0,2,5 etc to PRINT_START for pre-heating macros
+    earlytools = ""
     for toolnr, line_numbers in toolchanges.items():
       for lineno in line_numbers:
         if lineno < early_tool_rows:
-          early_tools = early_tools + toolnr + ","
+          earlytools = earlytools + toolnr + ","
           break
-    if early_tools != "":
-      start_line = start_line + " EARLY_TOOLS=" + early_tools[:-1]
+    if earlytools != "":
+      start_line = start_line + " EARLYTOOLS=" + earlytools[:-1]
     
     print(f"New print_start:\n{start_line}" + "\n")
     lines[start_line_index-1] = led_line + start_line + '\n'
 
-            
     with open(file_path, 'w') as f:
         f.writelines(lines)        
 
