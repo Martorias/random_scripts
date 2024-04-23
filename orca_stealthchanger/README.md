@@ -49,6 +49,16 @@ Adding some minimal purge per filament might be a good option as well, I use 15m
 Prime tower settings example  
 ![bild](https://github.com/Martorias/random_scripts/assets/38153913/ab17be1b-9e0a-4d16-a062-012115e9337b)
 
+
+## Script settings  
+- **cooldown_rows = 5000** - Basically if a tool isn't used for a while it'll drop the temps for it. Can be lowered/adjusted if you got faster heaters.  
+- **cooldown_temp = 150**  - The temperature to cool down to.  
+- **early_tool_rows = 3000** - If a Tx is found the first # rows it's added to the print_start parameters, can be used in purge/pre-heat macros.  
+- **preheat_rows = 1500** - If you got a fast heater this can be lowered as well.  
+- **led_effects = True** - If you want the leds to change colors based on filament settings- current is for DB 3x RGB sequins (modify set_leds if you want).  
+- **z_offset_adjust = False** - If gcode should be z-adjusted, check the end to change templates.  
+
+
 ## How it roughly works
 Assuming we have both z_offset_adjust and led_effects as True, the script does (in this order)
 - Searches through the file to find regex '^T\d$' (T followed by one digit) and adds them to a dictionary.  
