@@ -7,8 +7,9 @@ This script should make your orca sliced gcode files compatible with toolchanger
 Python!
 
 ## Features:
-- Calls M104 to set temps before initiating toolchange
-- Shuts down the heater after a toolhead isn't called again
+- Calls M104 to set temps before initiating toolchange, and after a toolchange if the tool won't be used for a while.
+- Shuts down the heater after a toolhead isn't called again.
+- Adjusts the PRINT_START to add more information for purging macros etc
 - (optional) Adjust z-offset in code, might be good if you want to tweak all gcode z height independent of your tools
 - (optional) Sets the LEDs to match filament color defined in orca (and set nozzles to white).  
 You might want to tweak this if you use it, currently good for Dragonburner with sequins (3 rgb leds)
